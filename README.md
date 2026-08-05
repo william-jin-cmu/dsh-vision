@@ -11,18 +11,26 @@ deepseek-v4 看不了图。本插件注册一个 `view_image` 工具：模型带
 模型: 这是一个 … 建议 …
 ```
 
+## 真实效果（dsh web，DeepSeek-V4-Flash）
+
+对纯文本的 deepseek-v4 说"看看 images.jpeg 在我的桌面上的"——模型自己定位文件、带着问题调 `view_image`（14.5s），拿到的描述精确到樱花图案、摄像头开孔和底部的 BURGA 品牌标识：
+
+| 桌面上的 `images.jpeg` | dsh web 里的完整过程 |
+|:---:|:---|
+| <img src="assets/demo-input.jpeg" width="220" alt="测试图片：BURGA 樱花手机壳"> | <img src="assets/demo-session.png" width="640" alt="dsh web 会话：模型自主调用 view_image 并准确描述图片"> |
+
 ## 后端选择
 
 一套配置（`baseURL` + `apiKey` + `model`）覆盖所有后端：
 
-| 场景 | baseURL | model | 说明 |
-|---|---|---|---|
-| **默认（免费）** | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.6v-flash` | 智谱当前免费视觉模型：128K 上下文、视觉推理，注册拿 key 即用，零成本开箱 |
-| **付费性价比** | 同上 | `glm-4.6v` | ¥1/¥3 每百万 token，同端点一行升级 |
-| **DashScope 用户** | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3-vl-flash` | 百炼最便宜的 VL 线，高精度 OCR；截图/GUI 重度场景换 `qwen3.7-plus`（ScreenSpot Pro 79.0），难图上 `qwen3.8-max` |
-| **火山豆包** | `https://ark.cn-beijing.volces.com/api/v3` | `doubao-seed-2-1-turbo-260628` | 注意 Ark 的模型 ID 带日期后缀（`doubao-seed-2.0-lite` 这种短名会 404），可用列表见 `GET /api/v3/models` |
-| **离线** | `http://localhost:11434/v1` | `qwen3-vl:4b` | Ollama 本地，无需 key |
-| **未来** | DeepSeek 官方识图 API（截至 2026-08 尚未开放，官方口径 "soon"） | — | 上线即一行配置切换，现有 DeepSeek key 直接用 |
+| 场景               | baseURL                                                         | model                          | 说明                                                                                                            |
+| ------------------ | --------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| **默认（免费）**   | `https://open.bigmodel.cn/api/paas/v4`                          | `glm-4.6v-flash`               | 智谱当前免费视觉模型：128K 上下文、视觉推理，注册拿 key 即用，零成本开箱                                        |
+| **付费性价比**     | 同上                                                            | `glm-4.6v`                     | ¥1/¥3 每百万 token，同端点一行升级                                                                              |
+| **DashScope 用户** | `https://dashscope.aliyuncs.com/compatible-mode/v1`             | `qwen3-vl-flash`               | 百炼最便宜的 VL 线，高精度 OCR；截图/GUI 重度场景换 `qwen3.7-plus`（ScreenSpot Pro 79.0），难图上 `qwen3.8-max` |
+| **火山豆包**       | `https://ark.cn-beijing.volces.com/api/v3`                      | `doubao-seed-2-1-turbo-260628` | 注意 Ark 的模型 ID 带日期后缀（`doubao-seed-2.0-lite` 这种短名会 404），可用列表见 `GET /api/v3/models`         |
+| **离线**           | `http://localhost:11434/v1`                                     | `qwen3-vl:4b`                  | Ollama 本地，无需 key                                                                                           |
+| **未来**           | DeepSeek 官方识图 API（截至 2026-08 尚未开放，官方口径 "soon"） | —                              | 上线即一行配置切换，现有 DeepSeek key 直接用                                                                    |
 
 API key 读取顺序：插件配置 `apiKey` → `$DSH_VISION_API_KEY` → `$ZHIPUAI_API_KEY` → `$DASHSCOPE_API_KEY`。本地端点（localhost）无需 key。
 
@@ -30,18 +38,18 @@ API key 读取顺序：插件配置 `apiKey` → `$DSH_VISION_API_KEY` → `$ZHI
 
 ## 实测（2026-08-05，4K 屏幕截图问答，全链路真实调用）
 
-| 模型 | 结果 | 延迟 | 备注 |
-|---|---|---|---|
-| `qwen3-vl-flash` | ✅ 准确 | **~2.9s** | 全场最快，百炼最便宜 VL 线——追求速度选它 |
-| `qwen3-vl-plus` | ✅ 准确 | ~3.4s | |
-| `glm-4.6v-flash`（**默认，免费**） | ✅ 准确 | ~6.8s | 高峰限流时自动走降级链 |
-| `glm-4v-flash`（降级兜底） | ✅ 可用，细节较少 | ~5.1s | |
-| `glm-4.6v` | ✅ 准确 | ~10.9s | ¥1/¥3 |
-| `doubao-seed-2-1-turbo-260628` | ✅ 细节丰富 | ~10-13s | Ark 模型需控制台开通，ID 带日期后缀 |
-| `doubao-seed-2-0-lite-260428` | ✅ 准确 | ~14s | |
-| `qwen3.8-max` | ✅ 细节最丰富（认出了 Arc 浏览器） | ~18s | 旗舰档 |
-| `qwen3.7-plus` | ✅ 准确 | ~21s | 推理型，截图/GUI 重度场景 |
-| `kimi-k3` | ✅ 准确（也认出了 Arc） | ~21s | 推理型，需 maxTokens ≥2048，高峰频繁 429，$3/$15 |
+| 模型                               | 结果                               | 延迟      | 备注                                             |
+| ---------------------------------- | ---------------------------------- | --------- | ------------------------------------------------ |
+| `qwen3-vl-flash`                   | ✅ 准确                            | **~2.9s** | 全场最快，百炼最便宜 VL 线——追求速度选它         |
+| `qwen3-vl-plus`                    | ✅ 准确                            | ~3.4s     |                                                  |
+| `glm-4.6v-flash`（**默认，免费**） | ✅ 准确                            | ~6.8s     | 高峰限流时自动走降级链                           |
+| `glm-4v-flash`（降级兜底）         | ✅ 可用，细节较少                  | ~5.1s     |                                                  |
+| `glm-4.6v`                         | ✅ 准确                            | ~10.9s    | ¥1/¥3                                            |
+| `doubao-seed-2-1-turbo-260628`     | ✅ 细节丰富                        | ~10-13s   | Ark 模型需控制台开通，ID 带日期后缀              |
+| `doubao-seed-2-0-lite-260428`      | ✅ 准确                            | ~14s      |                                                  |
+| `qwen3.8-max`                      | ✅ 细节最丰富（认出了 Arc 浏览器） | ~18s      | 旗舰档                                           |
+| `qwen3.7-plus`                     | ✅ 准确                            | ~21s      | 推理型，截图/GUI 重度场景                        |
+| `kimi-k3`                          | ✅ 准确（也认出了 Arc）            | ~21s      | 推理型，需 maxTokens ≥2048，高峰频繁 429，$3/$15 |
 
 要点：推理型模型（qwen3.7-plus / kimi-k3 / glm-4.1v-thinking）正文前的 `<think>` 块会被自动剥离，且这类模型建议 `maxTokens: 2048` 以上，否则推理会吃光 token 预算。
 
@@ -61,7 +69,7 @@ dshx verify dsh-vision
 ```yaml
 dsh-vision:
   baseURL: https://open.bigmodel.cn/api/paas/v4
-  apiKey: ""          # 留空则读环境变量
+  apiKey: "" # 留空则读环境变量
   model: glm-4.6v-flash
   maxTokens: 2048
   timeoutMs: 60000
