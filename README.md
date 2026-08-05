@@ -55,29 +55,36 @@ API key 读取顺序：插件配置 `apiKey` → `$DSH_VISION_API_KEY` → `$ZHI
 
 ## 安装
 
-Marisa（推荐）：
+**原生挂载（默认）**——dsh 主程序自带 `~/.dsh/config.yaml` 个人覆盖层，三步完成，不依赖任何第三方管理器：
 
 ```sh
-dshx install dsh-vision https://github.com/dsh-external/dsh-vision
-dshx verify dsh-vision
-```
-
-或 plugin-registry：`dsh plugin install ./dsh-vision && dsh plugin enable dsh-vision`。
-
-### ⚠️ 临时步骤：手工链接宿主依赖（[marisa#2](https://github.com/dsh-external/marisa/issues/2) 修复前需要）
-
-pnpm 严格布局下，外部插件解析不到宿主的 `@deepseek-ai/*` 与 `schemastery`，安装后启动会报 `Cannot find package '@deepseek-ai/dsh-tools'`。在插件安装目录内补两个符号链接即可（运行期实测的最小集，传递依赖沿真实路径自动解析）：
-
-```sh
-# CHECKOUT 是你的 dsh 检出根目录；dshx 安装时 PLUGIN_DIR=$CHECKOUT/.external-plugins/dsh-vision
+# 1) 取码（放哪都行）
+git clone https://github.com/dsh-external/dsh-vision ~/dsh-plugins/dsh-vision
+# 2) 链接宿主依赖（pnpm 布局下必需，背景见 marisa#2）
 CHECKOUT="$(cd "$(dirname "$(readlink -f "$(command -v dsh)")")/../../.." && pwd)"
-PLUGIN_DIR="$CHECKOUT/.external-plugins/dsh-vision"
-mkdir -p "$PLUGIN_DIR/node_modules/@deepseek-ai"
-ln -sfn "$CHECKOUT/packages/core/tools"  "$PLUGIN_DIR/node_modules/@deepseek-ai/dsh-tools"
-ln -sfn "$CHECKOUT/vendor/schemastery"   "$PLUGIN_DIR/node_modules/schemastery"
+mkdir -p ~/dsh-plugins/dsh-vision/node_modules/@deepseek-ai
+ln -sfn "$CHECKOUT/packages/core/tools"  ~/dsh-plugins/dsh-vision/node_modules/@deepseek-ai/dsh-tools
+ln -sfn "$CHECKOUT/vendor/schemastery"   ~/dsh-plugins/dsh-vision/node_modules/schemastery
+# 3) 挂载并重启 dsh
+cat >> ~/.dsh/config.yaml <<EOF
+- insert:
+    - id: dsh-vision
+      name: '$HOME/dsh-plugins/dsh-vision/lib/index.js'
+EOF
 ```
 
-Windows（PowerShell 管理员，或开启开发者模式）：把 `ln -sfn` 换成 `cmd /c mklink /J <link> <target>`。marisa#2 落地"install 期按 peerDependencies 自动建链"后本节可删。
+用 [DSH Companion](https://github.com/dsh-external/dsh-companion) 的话零安装——已随应用自带。
+
+<details>
+<summary>可选：经插件管理器安装（Marisa / plugin-registry）</summary>
+
+```sh
+dshx install dsh-vision https://github.com/dsh-external/dsh-vision && dshx verify dsh-vision
+```
+
+或 `dsh plugin install ./dsh-vision && dsh plugin enable dsh-vision`。注意 [marisa#2](https://github.com/dsh-external/marisa/issues/2) 修复前，装完仍需按上面第 2 步手工链接宿主依赖。
+
+</details>
 
 ## 配置
 
