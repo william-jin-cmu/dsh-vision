@@ -2,8 +2,8 @@
  * dsh-vision: eyes for a text-only model. Registers a `view_image` tool that
  * forwards the model's question about an image to an OpenAI-compatible VLM
  * endpoint and returns the answer as text. Backend is fully configurable —
- * DashScope (default), Zhipu's free glm-4v-flash, a local Ollama, or DeepSeek's
- * own vision API the day it ships (users' existing key then just works).
+ * Zhipu's free glm-4.6v-flash (default), DashScope, Ark, a local Ollama, or
+ * DeepSeek's own vision API the day it ships (users' existing key then just works).
  * @module dsh-vision
  */
 import type { Context as CordisContext } from 'cordis';

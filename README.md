@@ -28,17 +28,22 @@ API key 读取顺序：插件配置 `apiKey` → `$DSH_VISION_API_KEY` → `$ZHI
 
 **免费档降级链**：智谱免费模型偶发限流（429，公共容量池）。默认配置下插件会自动依次降级 `glm-4.6v-flash` → `glm-4.1v-thinking-flash` → `glm-4v-flash`，保证零配置也总能出答案；自定义 `fallbackModels` 可覆盖。thinking 系模型混进正文的 `<think>` 推理块会被自动剥离。
 
-## 实测（2026-08-05，4K 屏幕截图问答）
+## 实测（2026-08-05，4K 屏幕截图问答，全链路真实调用）
 
-| 模型 | 结果 | 延迟 |
-|---|---|---|
-| `glm-4.6v-flash`（免费） | ✅ 描述准确 | ~6.8s（高峰限流时自动走降级链） |
-| `glm-4.6v` | ✅ 描述准确 | ~10.9s |
-| `glm-4v-flash`（降级兜底） | ✅ 可用，细节较少 | ~5.1s |
-| `doubao-seed-2-1-turbo-260628`（豆包推荐档） | ✅ 细节最丰富 | ~10-13s |
-| `doubao-seed-2-0-lite-260428` | ✅ 描述准确 | ~14s |
+| 模型 | 结果 | 延迟 | 备注 |
+|---|---|---|---|
+| `qwen3-vl-flash` | ✅ 准确 | **~2.9s** | 全场最快，百炼最便宜 VL 线——追求速度选它 |
+| `qwen3-vl-plus` | ✅ 准确 | ~3.4s | |
+| `glm-4.6v-flash`（**默认，免费**） | ✅ 准确 | ~6.8s | 高峰限流时自动走降级链 |
+| `glm-4v-flash`（降级兜底） | ✅ 可用，细节较少 | ~5.1s | |
+| `glm-4.6v` | ✅ 准确 | ~10.9s | ¥1/¥3 |
+| `doubao-seed-2-1-turbo-260628` | ✅ 细节丰富 | ~10-13s | Ark 模型需控制台开通，ID 带日期后缀 |
+| `doubao-seed-2-0-lite-260428` | ✅ 准确 | ~14s | |
+| `qwen3.8-max` | ✅ 细节最丰富（认出了 Arc 浏览器） | ~18s | 旗舰档 |
+| `qwen3.7-plus` | ✅ 准确 | ~21s | 推理型，截图/GUI 重度场景 |
+| `kimi-k3` | ✅ 准确（也认出了 Arc） | ~21s | 推理型，需 maxTokens ≥2048，高峰频繁 429，$3/$15 |
 
-注：豆包各模型需先在火山方舟控制台开通（未开通返回 404）；首次调用有预热延迟。
+要点：推理型模型（qwen3.7-plus / kimi-k3 / glm-4.1v-thinking）正文前的 `<think>` 块会被自动剥离，且这类模型建议 `maxTokens: 2048` 以上，否则推理会吃光 token 预算。
 
 ## 安装
 
@@ -58,7 +63,7 @@ dsh-vision:
   baseURL: https://open.bigmodel.cn/api/paas/v4
   apiKey: ""          # 留空则读环境变量
   model: glm-4.6v-flash
-  maxTokens: 1024
+  maxTokens: 2048
   timeoutMs: 60000
   maxImageBytes: 10485760
 ```
