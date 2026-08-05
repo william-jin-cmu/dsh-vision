@@ -1,7 +1,7 @@
 {
   "name": "@dsh-external/dsh-vision",
   "version": "0.1.0",
-  "description": "给纯文本的 DeepSeek 加上眼睛：view_image 工具经任意 OpenAI 兼容 VLM 端点回答关于图片的问题（默认通义 qwen-vl-plus，可换智谱免费 glm-4v-flash / Ollama 本地 / 未来 DeepSeek 官方识图 API）",
+  "description": "给纯文本的 DeepSeek 加上眼睛：view_image 工具经任意 OpenAI 兼容 VLM 端点回答关于图片的问题（默认智谱免费 glm-4.6v-flash 零成本开箱，可换通义 qwen3-vl / Ollama 本地 / 未来 DeepSeek 官方识图 API）",
   "private": true,
   "type": "module",
   "main": "lib/index.js",

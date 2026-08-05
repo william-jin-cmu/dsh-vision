@@ -83,17 +83,19 @@ describe('view_image', () => {
 
   it('fails with setup guidance when no API key is configured', async () => {
     vi.stubEnv('DSH_VISION_API_KEY', '')
+    vi.stubEnv('ZHIPUAI_API_KEY', '')
     vi.stubEnv('DASHSCOPE_API_KEY', '')
     const ctx = await setup()
 
     const result = await callTool(ctx, { source: 'data:image/png;base64,AAAA' })
     expect(result.isError).toBe(true)
     expect(text(result)).toMatch(/DSH_VISION_API_KEY/)
-    expect(text(result)).toMatch(/glm-4v-flash/)
+    expect(text(result)).toMatch(/glm-4\.6v-flash is FREE/)
   })
 
-  it('sends no key requirement for non-DashScope endpoints (Ollama)', async () => {
+  it('requires no key for local endpoints (Ollama)', async () => {
     vi.stubEnv('DSH_VISION_API_KEY', '')
+    vi.stubEnv('ZHIPUAI_API_KEY', '')
     vi.stubEnv('DASHSCOPE_API_KEY', '')
     stubFetchOk('local answer')
     const ctx = await setup({ baseURL: 'http://localhost:11434/v1', model: 'qwen3-vl:4b' })

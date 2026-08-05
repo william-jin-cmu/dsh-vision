@@ -17,12 +17,13 @@ deepseek-v4 看不了图。本插件注册一个 `view_image` 工具：模型带
 
 | 场景 | baseURL | model | 说明 |
 |---|---|---|---|
-| **默认** | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-vl-plus` | 通义 VL，国内直连，新用户有大额免费额度；难图换 `qwen-vl-max` |
-| **零成本** | `https://open.bigmodel.cn/api/paas/v4` | `glm-4v-flash` | 智谱永久免费（30 并发上限），注册即用 |
-| **离线** | `http://localhost:11434/v1` | `qwen3-vl:4b` | Ollama 本地，无需 key，中文 OCR 推荐小尺寸 Qwen-VL |
-| **未来** | DeepSeek 官方识图 API（官方口径 "soon"） | — | 上线即一行配置切换，现有 DeepSeek key 直接用 |
+| **默认（免费）** | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.6v-flash` | 智谱当前免费视觉模型：128K 上下文、视觉推理，注册拿 key 即用，零成本开箱 |
+| **付费性价比** | 同上 | `glm-4.6v` | ¥1/¥3 每百万 token，同端点一行升级 |
+| **DashScope 用户** | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3-vl-flash` | 百炼最便宜的 VL 线，高精度 OCR；截图/GUI 重度场景换 `qwen3.7-plus`（ScreenSpot Pro 79.0），难图上 `qwen3.8-max` |
+| **离线** | `http://localhost:11434/v1` | `qwen3-vl:4b` | Ollama 本地，无需 key |
+| **未来** | DeepSeek 官方识图 API（截至 2026-08 尚未开放，官方口径 "soon"） | — | 上线即一行配置切换，现有 DeepSeek key 直接用 |
 
-API key 读取顺序：插件配置 `apiKey` → `$DSH_VISION_API_KEY` → `$DASHSCOPE_API_KEY`。
+API key 读取顺序：插件配置 `apiKey` → `$DSH_VISION_API_KEY` → `$ZHIPUAI_API_KEY` → `$DASHSCOPE_API_KEY`。本地端点（localhost）无需 key。
 
 ## 安装
 
@@ -39,9 +40,9 @@ dshx verify dsh-vision
 
 ```yaml
 dsh-vision:
-  baseURL: https://dashscope.aliyuncs.com/compatible-mode/v1
+  baseURL: https://open.bigmodel.cn/api/paas/v4
   apiKey: ""          # 留空则读环境变量
-  model: qwen-vl-plus
+  model: glm-4.6v-flash
   maxTokens: 1024
   timeoutMs: 60000
   maxImageBytes: 10485760
