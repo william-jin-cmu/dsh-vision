@@ -64,6 +64,21 @@ dshx verify dsh-vision
 
 或 plugin-registry：`dsh plugin install ./dsh-vision && dsh plugin enable dsh-vision`。
 
+### ⚠️ 临时步骤：手工链接宿主依赖（[marisa#2](https://github.com/dsh-external/marisa/issues/2) 修复前需要）
+
+pnpm 严格布局下，外部插件解析不到宿主的 `@deepseek-ai/*` 与 `schemastery`，安装后启动会报 `Cannot find package '@deepseek-ai/dsh-tools'`。在插件安装目录内补两个符号链接即可（运行期实测的最小集，传递依赖沿真实路径自动解析）：
+
+```sh
+# CHECKOUT 是你的 dsh 检出根目录；dshx 安装时 PLUGIN_DIR=$CHECKOUT/.external-plugins/dsh-vision
+CHECKOUT="$(cd "$(dirname "$(readlink -f "$(command -v dsh)")")/../../.." && pwd)"
+PLUGIN_DIR="$CHECKOUT/.external-plugins/dsh-vision"
+mkdir -p "$PLUGIN_DIR/node_modules/@deepseek-ai"
+ln -sfn "$CHECKOUT/packages/core/tools"  "$PLUGIN_DIR/node_modules/@deepseek-ai/dsh-tools"
+ln -sfn "$CHECKOUT/vendor/schemastery"   "$PLUGIN_DIR/node_modules/schemastery"
+```
+
+Windows（PowerShell 管理员，或开启开发者模式）：把 `ln -sfn` 换成 `cmd /c mklink /J <link> <target>`。marisa#2 落地"install 期按 peerDependencies 自动建链"后本节可删。
+
 ## 配置
 
 ```yaml
