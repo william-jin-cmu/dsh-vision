@@ -20,6 +20,7 @@ export interface Config {
     baseURL?: string;
     apiKey?: string;
     model?: string;
+    fallbackModels?: string[];
     maxTokens?: number;
     timeoutMs?: number;
     maxImageBytes?: number;

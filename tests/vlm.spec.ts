@@ -103,4 +103,18 @@ describe('visionChat', () => {
     const fakeFetch = (async () => okResponse({ choices: [] })) as typeof fetch
     await expect(visionChat({ ...baseRequest(), fetch: fakeFetch })).rejects.toThrow(/no assistant text/)
   })
+
+  it('strips <think> reasoning from thinking-mode models', async () => {
+    const fakeFetch = (async () => okResponse({
+      choices: [{ message: { content: '<think>the user wants…</think>\nA login form.' } }],
+    })) as typeof fetch
+    expect(await visionChat({ ...baseRequest(), fetch: fakeFetch })).toBe('A login form.')
+  })
+
+  it('rejects a reasoning-only response that ran out of tokens', async () => {
+    const fakeFetch = (async () => okResponse({
+      choices: [{ message: { content: '<think>endless reasoning that never closes' } }],
+    })) as typeof fetch
+    await expect(visionChat({ ...baseRequest(), fetch: fakeFetch })).rejects.toThrow(/only reasoning/)
+  })
 })

@@ -23,18 +23,27 @@ export interface Config {
   baseURL?: string
   apiKey?: string
   model?: string
+  fallbackModels?: string[]
   maxTokens?: number
   timeoutMs?: number
   maxImageBytes?: number
 }
 
+const DEFAULT_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4'
+/** Zhipu's free tier gets congested (HTTP 429 code 1305); older free models still answer. */
+const DEFAULT_FREE_FALLBACKS = ['glm-4.1v-thinking-flash', 'glm-4v-flash']
+/** Errors worth trying the next model for: rate limit, missing model, server trouble. */
+const RETRIABLE = /returned (?:429|404|5\d\d)/
+
 export const Config: z<Config> = z.object({
-  baseURL: z.string().default('https://open.bigmodel.cn/api/paas/v4')
+  baseURL: z.string().default(DEFAULT_BASE_URL)
     .description('OpenAI-compatible endpoint base URL (…/chat/completions is appended)'),
   apiKey: z.string().role('secret').default('')
     .description('API key; falls back to $DSH_VISION_API_KEY, then $ZHIPUAI_API_KEY / $DASHSCOPE_API_KEY'),
   model: z.string().default('glm-4.6v-flash')
     .description('Vision model id at the endpoint, e.g. glm-4.6v-flash (free) / glm-4.6v / qwen3-vl-flash / qwen3.7-plus / qwen3-vl:4b'),
+  fallbackModels: z.array(z.string()).default([])
+    .description('Models tried in order when the primary returns 429/404/5xx; defaults to Zhipu free-tier chain when baseURL is the default'),
   maxTokens: z.number().step(1).min(1).max(32_768).default(1024),
   timeoutMs: z.number().step(1).min(1_000).max(300_000).default(60_000),
   maxImageBytes: z.number().step(1).min(1).default(10 * 1024 * 1024),
@@ -50,12 +59,15 @@ const TEXT_OUTPUT = {
 
 export function apply(ctx: Context, config: Config): void {
   const resolved = {
-    baseURL: config.baseURL ?? 'https://open.bigmodel.cn/api/paas/v4',
+    baseURL: config.baseURL ?? DEFAULT_BASE_URL,
     model: config.model ?? 'glm-4.6v-flash',
     maxTokens: config.maxTokens ?? 1024,
     timeoutMs: config.timeoutMs ?? 60_000,
     maxImageBytes: config.maxImageBytes ?? 10 * 1024 * 1024,
   }
+  const fallbackModels = config.fallbackModels !== undefined && config.fallbackModels.length > 0
+    ? config.fallbackModels
+    : resolved.baseURL === DEFAULT_BASE_URL && resolved.model === 'glm-4.6v-flash' ? DEFAULT_FREE_FALLBACKS : []
   // Key is resolved per call, not at mount: the plugin loads fine without one
   // and the tool explains exactly where to put it. Local endpoints need none.
   const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(resolved.baseURL)
@@ -92,13 +104,17 @@ export function apply(ctx: Context, config: Config): void {
       const question = typeof input.question === 'string' && input.question !== ''
         ? input.question
         : 'Describe this image thoroughly. Include any visible text verbatim, the overall layout, and notable details.'
-      return await visionChat({
-        ...resolved,
-        apiKey: resolveApiKey(),
-        source,
-        question,
-        signal: exec.signal,
-      })
+      const apiKey = resolveApiKey()
+      let lastError: unknown
+      for (const model of [resolved.model, ...fallbackModels]) {
+        try {
+          return await visionChat({ ...resolved, model, apiKey, source, question, signal: exec.signal })
+        } catch (error) {
+          lastError = error
+          if (!(error instanceof Error) || !RETRIABLE.test(error.message)) throw error
+        }
+      }
+      throw lastError
     },
   })), 'dsh-vision.tool')
 

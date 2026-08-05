@@ -105,6 +105,39 @@ describe('view_image', () => {
     expect(text(result)).toBe('local answer')
   })
 
+  it('falls back through the free-tier chain on 429 with default config', async () => {
+    vi.stubEnv('DSH_VISION_API_KEY', 'sk-test')
+    const models: string[] = []
+    vi.stubGlobal('fetch', async (_url: unknown, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { model: string }
+      models.push(body.model)
+      if (body.model === 'glm-4.6v-flash') {
+        return new Response(JSON.stringify({ error: { code: '1305', message: '该模型当前访问量过大' } }), { status: 429 })
+      }
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'fallback answer' } }] }), { status: 200 })
+    })
+    const ctx = await setup()
+
+    const result = await callTool(ctx, { source: 'data:image/png;base64,AAAA', question: 'hi' })
+    expect(result.isError).toBeFalsy()
+    expect(text(result)).toBe('fallback answer')
+    expect(models).toEqual(['glm-4.6v-flash', 'glm-4.1v-thinking-flash'])
+  })
+
+  it('does not fall back on non-retriable errors or custom endpoints', async () => {
+    vi.stubEnv('DSH_VISION_API_KEY', 'sk-test')
+    const models: string[] = []
+    vi.stubGlobal('fetch', async (_url: unknown, init?: RequestInit) => {
+      models.push((JSON.parse(String(init?.body)) as { model: string }).model)
+      return new Response('bad request', { status: 400 })
+    })
+    const ctx = await setup()
+
+    const result = await callTool(ctx, { source: 'data:image/png;base64,AAAA', question: 'hi' })
+    expect(result.isError).toBe(true)
+    expect(models).toEqual(['glm-4.6v-flash'])
+  })
+
   it('contributes a system-prompt section teaching the model to use its eyes', async () => {
     vi.stubEnv('DSH_VISION_API_KEY', 'sk-test')
     const ctx = await setup()
