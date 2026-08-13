@@ -32,7 +32,7 @@ deepseek-v4 看不了图。本插件注册一个 `view_image` 工具：模型带
 | **离线**           | `http://localhost:11434/v1`                                     | `qwen3-vl:4b`                  | Ollama 本地，无需 key                                                                                           |
 | **未来**           | DeepSeek 官方识图 API（截至 2026-08 尚未开放，官方口径 "soon"） | —                              | 上线即一行配置切换，现有 DeepSeek key 直接用                                                                    |
 
-API key 读取顺序：插件配置 `apiKey` → `$DSH_VISION_API_KEY` → `$ZHIPUAI_API_KEY` → `$DASHSCOPE_API_KEY`。本地端点（localhost）无需 key。
+API key 读取顺序：插件配置 `apiKey` → `$VISION_API_KEY` → `$DSH_VISION_API_KEY`（仅限 export，dsh 0812 起 `.env` 文件内禁止 `DSH_` 前缀变量）→ `$ZHIPUAI_API_KEY` → `$DASHSCOPE_API_KEY`。推荐写进 `~/.dsh/.env` 的名字是 `VISION_API_KEY`。本地端点（localhost）无需 key。
 
 **免费档降级链**：智谱免费模型偶发限流（429，公共容量池）。默认配置下插件会自动依次降级 `glm-4.6v-flash` → `glm-4.1v-thinking-flash` → `glm-4v-flash`，保证零配置也总能出答案；自定义 `fallbackModels` 可覆盖。thinking 系模型混进正文的 `<think>` 推理块会被自动剥离。
 

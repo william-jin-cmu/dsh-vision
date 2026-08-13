@@ -38,7 +38,7 @@ link_pkg() {
 echo "=== Linking build dependencies (checkout: $CHECKOUT) ==="
 mkdir -p node_modules/@deepseek-ai node_modules/@standard-schema
 ln -sfn "$CHECKOUT/node_modules/@types" node_modules/@types
-link_pkg cordis vendor/cordis
+link_pkg @deepseek-ai/cordis vendor/cordis
 link_pkg cosmokit vendor/cosmokit
 link_pkg schemastery vendor/schemastery
 link_pkg @deepseek-ai/dsh-brand packages/util/brand

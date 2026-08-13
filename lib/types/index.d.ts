@@ -6,12 +6,12 @@
  * DeepSeek's own vision API the day it ships (users' existing key then just works).
  * @module dsh-vision
  */
-import type { Context as CordisContext } from 'cordis';
+import type { Context as CordisContext } from '@deepseek-ai/cordis';
 import type SystemPrompt from '@deepseek-ai/dsh-system-prompt';
-import type ToolRegistry from '@deepseek-ai/dsh-tools';
+import type ToolRuntime from '@deepseek-ai/dsh-tools';
 import z from 'schemastery';
 type Context = CordisContext & {
-    tools: ToolRegistry;
+    tools: ToolRuntime;
     systemPrompt: SystemPrompt;
 };
 export declare const name = "dsh-vision";
