@@ -1,5 +1,5 @@
 {
-  "id": "@dsh-external/dsh-vision",
+  "id": "dsh-vision",
   "version": "0.1.0",
   "main": "./lib/index.js",
   "description": "Vision for text-only DeepSeek: a view_image tool that answers questions about images via any OpenAI-compatible VLM endpoint",

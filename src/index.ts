@@ -7,14 +7,14 @@
  * @module dsh-vision
  */
 
-import type { Context as CordisContext } from '@deepseek-ai/cordis'
+import type { Context as CordisContext } from 'cordis'
 import type SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import type ToolRuntime from '@deepseek-ai/dsh-tools'
+import type ToolRegistry from '@deepseek-ai/dsh-tools'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import z from 'schemastery'
 import { visionChat } from './vlm.js'
 
-type Context = CordisContext & { tools: ToolRuntime; systemPrompt: SystemPrompt }
+type Context = CordisContext & { tools: ToolRegistry; systemPrompt: SystemPrompt }
 
 export const name = 'dsh-vision'
 export const inject = ['tools', 'systemPrompt']
@@ -39,7 +39,7 @@ export const Config: z<Config> = z.object({
   baseURL: z.string().default(DEFAULT_BASE_URL)
     .description('OpenAI-compatible endpoint base URL (…/chat/completions is appended)'),
   apiKey: z.string().role('secret').default('')
-    .description('API key; falls back to $VISION_API_KEY (or exported $DSH_VISION_API_KEY), then $ZHIPUAI_API_KEY / $DASHSCOPE_API_KEY'),
+    .description('API key; falls back to $DSH_VISION_API_KEY, then $ZHIPUAI_API_KEY / $DASHSCOPE_API_KEY'),
   model: z.string().default('glm-4.6v-flash')
     .description('Vision model id at the endpoint, e.g. glm-4.6v-flash (free) / glm-4.6v / qwen3-vl-flash / qwen3.7-plus / qwen3-vl:4b'),
   fallbackModels: z.array(z.string()).default([])
@@ -73,9 +73,9 @@ export function apply(ctx: Context, config: Config): void {
   const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(resolved.baseURL)
   const resolveApiKey = (): string => {
     const key = config.apiKey !== undefined && config.apiKey !== '' ? config.apiKey
-      : process.env.VISION_API_KEY ?? process.env.DSH_VISION_API_KEY ?? process.env.ZHIPUAI_API_KEY ?? process.env.DASHSCOPE_API_KEY ?? ''
+      : process.env.DSH_VISION_API_KEY ?? process.env.ZHIPUAI_API_KEY ?? process.env.DASHSCOPE_API_KEY ?? ''
     if (key === '' && !isLocal) {
-      throw new Error('view_image: no API key. Set the dsh-vision apiKey config, or set VISION_API_KEY (in ~/.dsh/.env or exported; also honored: ZHIPUAI_API_KEY, DASHSCOPE_API_KEY — DSH_* names are rejected inside .env files, so the old DSH_VISION_API_KEY works only when exported). The default model glm-4.6v-flash is FREE — create a key in 1 minute at https://open.bigmodel.cn. Offline alternative: baseURL http://localhost:11434/v1 + an Ollama vision model, no key needed.')
+      throw new Error('view_image: no API key. Set the dsh-vision apiKey config, or export DSH_VISION_API_KEY (also honored: ZHIPUAI_API_KEY, DASHSCOPE_API_KEY). The default model glm-4.6v-flash is FREE — create a key in 1 minute at https://open.bigmodel.cn. Offline alternative: baseURL http://localhost:11434/v1 + an Ollama vision model, no key needed.')
     }
     return key
   }

@@ -11,6 +11,11 @@ deepseek-v4 看不了图。本插件注册一个 `view_image` 工具：模型带
 模型: 这是一个 … 建议 …
 ```
 
+## 版本记录
+
+- `v0.1.1`（2026-09-28）：peerDependencies 放宽到 `^0.1.0 || ^0.2.0-rc.1`（dsh-system-prompt / dsh-tools）——dsh 0.2.0 起宿主包升级到 0.2.x，旧的 `^0.1.0` 触发 0.2.0 新增的 peer 强校验，插件被启动时禁用（症状：启动日志 `disabling profile plugin row "dsh-vision"`）。零代码改动，纯 peer 声明修复。
+- `v0.1.0`：首个版本，`view_image` 工具桥接 OpenAI 兼容 VLM。
+
 ## 真实效果（dsh web，DeepSeek-V4-Flash）
 
 对纯文本的 deepseek-v4 说"看看 images.jpeg 在我的桌面上的"——模型自己定位文件、带着问题调 `view_image`（14.5s），拿到的描述精确到樱花图案、摄像头开孔和底部的 BURGA 品牌标识：
@@ -32,7 +37,7 @@ deepseek-v4 看不了图。本插件注册一个 `view_image` 工具：模型带
 | **离线**           | `http://localhost:11434/v1`                                     | `qwen3-vl:4b`                  | Ollama 本地，无需 key                                                                                           |
 | **未来**           | DeepSeek 官方识图 API（截至 2026-08 尚未开放，官方口径 "soon"） | —                              | 上线即一行配置切换，现有 DeepSeek key 直接用                                                                    |
 
-API key 读取顺序：插件配置 `apiKey` → `$VISION_API_KEY` → `$DSH_VISION_API_KEY`（仅限 export，dsh 0812 起 `.env` 文件内禁止 `DSH_` 前缀变量）→ `$ZHIPUAI_API_KEY` → `$DASHSCOPE_API_KEY`。推荐写进 `~/.dsh/.env` 的名字是 `VISION_API_KEY`。本地端点（localhost）无需 key。
+API key 读取顺序：插件配置 `apiKey` → `$DSH_VISION_API_KEY` → `$ZHIPUAI_API_KEY` → `$DASHSCOPE_API_KEY`。本地端点（localhost）无需 key。
 
 **免费档降级链**：智谱免费模型偶发限流（429，公共容量池）。默认配置下插件会自动依次降级 `glm-4.6v-flash` → `glm-4.1v-thinking-flash` → `glm-4v-flash`，保证零配置也总能出答案；自定义 `fallbackModels` 可覆盖。thinking 系模型混进正文的 `<think>` 推理块会被自动剥离。
 
@@ -82,7 +87,7 @@ EOF
 dshx install dsh-vision https://github.com/dsh-external/dsh-vision && dshx verify dsh-vision
 ```
 
-或 `dsh registry install ./dsh-vision && dsh registry enable dsh-vision`。注意 [marisa#2](https://github.com/dsh-external/marisa/issues/2) 修复前，装完仍需按上面第 2 步手工链接宿主依赖。
+或 `dsh plugin install ./dsh-vision && dsh plugin enable dsh-vision`。注意 [marisa#2](https://github.com/dsh-external/marisa/issues/2) 修复前，装完仍需按上面第 2 步手工链接宿主依赖。
 
 </details>
 

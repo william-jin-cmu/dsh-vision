@@ -6,6 +6,7 @@
  */
 
 import { readFile, stat } from 'node:fs/promises'
+import { gunzipSync } from 'node:zlib'
 import { extname } from 'node:path'
 
 /** Everything one vision call needs; `fetch` is injectable as a test seam. */
@@ -83,6 +84,9 @@ export async function visionChat(request: VisionRequest): Promise<string> {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
+        // Some gateways force gzip regardless of request preferences; identity
+        // plus manual decompression below covers both paths.
+        'accept-encoding': 'identity',
         ...request.apiKey === '' ? {} : { authorization: `Bearer ${request.apiKey}` },
       },
       body: JSON.stringify({
@@ -103,7 +107,8 @@ export async function visionChat(request: VisionRequest): Promise<string> {
     throw new Error(redact(`view_image: request to ${url} failed: ${reason}`))
   }
 
-  const body = await response.text()
+  const raw = Buffer.from(await response.arrayBuffer())
+        const body = (raw[0] === 0x1f && raw[1] === 0x8b) ? gunzipSync(raw).toString('utf8') : raw.toString('utf8')
   if (!response.ok) {
     throw new Error(redact(`view_image: ${url} returned ${response.status}: ${body.slice(0, 500)}`))
   }

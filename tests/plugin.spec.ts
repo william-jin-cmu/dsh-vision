@@ -1,14 +1,14 @@
 /**
  * dsh-vision plugin: real Cordis composition (SessionStore + SystemPrompt +
- * ToolRuntime + the plugin), global fetch stubbed. Asserts the model-visible
+ * ToolRegistry + the plugin), global fetch stubbed. Asserts the model-visible
  * tool contract through the registry, exactly as dsh would call it.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from 'cordis'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { type ToolExecutionResult } from '@deepseek-ai/dsh-tools'
+import ToolRegistry, { type ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import { CallId, createUserMessage } from '@deepseek-ai/dsh-llm'
 import * as DshVision from '../src/index.ts'
 
@@ -26,7 +26,7 @@ async function setup(config: DshVision.Config = {}): Promise<Context> {
   activeContexts.push(ctx)
   await ctx.plugin(SessionStore)
   await ctx.plugin(SystemPrompt)
-  await ctx.plugin(ToolRuntime)
+  await ctx.plugin(ToolRegistry)
   await ctx.plugin(DshVision, config)
   return ctx
 }
@@ -49,11 +49,10 @@ function text(result: ToolExecutionResult): string {
   return result.content.map(block => block.type === 'text' ? block.text : '').join('\n')
 }
 
-function stubFetchOk(answer: string): { bodies: unknown[]; headers: Array<Record<string, string>> } {
-  const captured: { bodies: unknown[]; headers: Array<Record<string, string>> } = { bodies: [], headers: [] }
+function stubFetchOk(answer: string): { bodies: unknown[] } {
+  const captured: { bodies: unknown[] } = { bodies: [] }
   vi.stubGlobal('fetch', async (_url: unknown, init?: RequestInit) => {
     captured.bodies.push(JSON.parse(String(init?.body)))
-    captured.headers.push({ ...(init?.headers as Record<string, string> | undefined) })
     return new Response(JSON.stringify({ choices: [{ message: { content: answer } }] }), { status: 200 })
   })
   return captured
@@ -61,7 +60,7 @@ function stubFetchOk(answer: string): { bodies: unknown[]; headers: Array<Record
 
 describe('view_image', () => {
   it('registers and answers through the registry with the question passed through', async () => {
-    vi.stubEnv('VISION_API_KEY', 'sk-test')
+    vi.stubEnv('DSH_VISION_API_KEY', 'sk-test')
     const captured = stubFetchOk('two cats on a sofa')
     const ctx = await setup()
 
@@ -72,18 +71,8 @@ describe('view_image', () => {
     expect(body.messages[0]!.content[1]!.text).toBe('how many cats?')
   })
 
-  it('still honors an exported legacy DSH_VISION_API_KEY', async () => {
-    vi.stubEnv('DSH_VISION_API_KEY', 'sk-legacy')
-    const captured = stubFetchOk('ok')
-    const ctx = await setup()
-
-    const result = await callTool(ctx, { source: 'data:image/png;base64,AAAA', question: 'q?' })
-    expect(result.isError).toBeFalsy()
-    expect(captured.headers[0]?.authorization).toBe('Bearer sk-legacy')
-  })
-
   it('falls back to a thorough-description question when none is given', async () => {
-    vi.stubEnv('VISION_API_KEY', 'sk-test')
+    vi.stubEnv('DSH_VISION_API_KEY', 'sk-test')
     const captured = stubFetchOk('desc')
     const ctx = await setup()
 
@@ -93,7 +82,7 @@ describe('view_image', () => {
   })
 
   it('fails with setup guidance when no API key is configured', async () => {
-    vi.stubEnv('VISION_API_KEY', '')
+    vi.stubEnv('DSH_VISION_API_KEY', '')
     vi.stubEnv('ZHIPUAI_API_KEY', '')
     vi.stubEnv('DASHSCOPE_API_KEY', '')
     const ctx = await setup()
@@ -105,7 +94,7 @@ describe('view_image', () => {
   })
 
   it('requires no key for local endpoints (Ollama)', async () => {
-    vi.stubEnv('VISION_API_KEY', '')
+    vi.stubEnv('DSH_VISION_API_KEY', '')
     vi.stubEnv('ZHIPUAI_API_KEY', '')
     vi.stubEnv('DASHSCOPE_API_KEY', '')
     stubFetchOk('local answer')
@@ -117,7 +106,7 @@ describe('view_image', () => {
   })
 
   it('falls back through the free-tier chain on 429 with default config', async () => {
-    vi.stubEnv('VISION_API_KEY', 'sk-test')
+    vi.stubEnv('DSH_VISION_API_KEY', 'sk-test')
     const models: string[] = []
     vi.stubGlobal('fetch', async (_url: unknown, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as { model: string }
@@ -136,7 +125,7 @@ describe('view_image', () => {
   })
 
   it('does not fall back on non-retriable errors or custom endpoints', async () => {
-    vi.stubEnv('VISION_API_KEY', 'sk-test')
+    vi.stubEnv('DSH_VISION_API_KEY', 'sk-test')
     const models: string[] = []
     vi.stubGlobal('fetch', async (_url: unknown, init?: RequestInit) => {
       models.push((JSON.parse(String(init?.body)) as { model: string }).model)
@@ -150,7 +139,7 @@ describe('view_image', () => {
   })
 
   it('contributes a system-prompt section teaching the model to use its eyes', async () => {
-    vi.stubEnv('VISION_API_KEY', 'sk-test')
+    vi.stubEnv('DSH_VISION_API_KEY', 'sk-test')
     const ctx = await setup()
     const assembly = await ctx.systemPrompt.assemble({ cwd: '/work' } as never)
     const section = assembly.sections.find(s => s.name === 'tool:dsh-vision')
